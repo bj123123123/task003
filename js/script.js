@@ -160,6 +160,16 @@
     function byDate(a,b) {
         return new Date(a.date) - new Date(b.date);
     }
+    // 0-3.检查分类是否有未完成任务
+    function hasUnfinishedTasks(categoryOrSubCategory) {
+        var todos = categoryOrSubCategory.todos || [];
+        for(var i = 0; i < todos.length; i++) {
+            if(todos[i].isFinished === false) {
+                return true;
+            }
+        }
+        return false;
+    }
     // 0-3.更新data的number
     function updateDataNumber(data) {
         function getUnfinishedNums(array) {
@@ -171,27 +181,44 @@
             }
             return num;
         }
+        function getTotalNums(array) {
+            return array.length;
+        }
         var arr = data.category;
+        var totalUnfinishedNumber = 0;
         var totalNumber = 0;
         for(var i = 0; i < arr.length; i++) {
             var arrSCG = arr[i].subCategory;
             if(arrSCG.length > 0) {
-                var number = 0;
+                var unfinishedNumber = 0;
+                var totalCatNumber = 0;
                 for(var j = 0;j < arrSCG.length; j++) {
-                    arrSCG[j].number = getUnfinishedNums(arrSCG[j].todos);
-                    number += arrSCG[j].number;
+                    var unfinished = getUnfinishedNums(arrSCG[j].todos);
+                    var total = getTotalNums(arrSCG[j].todos);
+                    arrSCG[j].unfinishedNumber = unfinished;
+                    arrSCG[j].totalNumber = total;
+                    unfinishedNumber += unfinished;
+                    totalCatNumber += total;
                 }
-                arr[i].number = number + getUnfinishedNums(arr[i].todos);
-                totalNumber += arr[i].number;
+                var mainUnfinished = getUnfinishedNums(arr[i].todos);
+                var mainTotal = getTotalNums(arr[i].todos);
+                arr[i].unfinishedNumber = unfinishedNumber + mainUnfinished;
+                arr[i].totalNumber = totalCatNumber + mainTotal;
+                totalUnfinishedNumber += arr[i].unfinishedNumber;
+                totalNumber += arr[i].totalNumber;
             } else {
-                arr[i].number = getUnfinishedNums(arr[i].todos);
-                totalNumber += arr[i].number;
+                arr[i].unfinishedNumber = getUnfinishedNums(arr[i].todos);
+                arr[i].totalNumber = getTotalNums(arr[i].todos);
+                totalUnfinishedNumber += arr[i].unfinishedNumber;
+                totalNumber += arr[i].totalNumber;
             }
         }
-        data.totalNumber =  totalNumber;
+        data.totalUnfinishedNumber = totalUnfinishedNumber;
+        data.totalNumber = totalNumber;
     }
     // 获取任务总数节点
-    var totalTaskNums = $('#total i');
+    var totalTaskUnfinishedNum = $('#total i:first-child');
+    var totalTaskTotalNum = $('#total i:last-child');
     // 获取分类列表节点
     var cgList = $('.m-category-list');
     // 获取分类容器节点
@@ -305,26 +332,58 @@
     $.delegate(cgList,'.delete','click',function() {
         var index = this.parentNode.index;
         var selectIndex = '';
-        new Modal({text:'是否确认要删除？'})
-            .on('confirm',function() {
-                if(index.indexOf('-') == -1) {
-                    data.category.splice(index,1);
-                    selectIndex = '' + Math.min(index,data.category.length - 1);
-                }else {
-                    var arr = index.split('-');
-                    data.category[arr[0]].subCategory.splice(arr[1],1);
-                    if(data.category[arr[0]].subCategory.length == 0) {
-                        selectIndex = arr[0];
-                    }else {
-                        selectIndex = arr[0] + '-' + Math.min(arr[1],data.category[arr[0]].subCategory.length - 1);
+        var hasUnfinished = false;
+        
+        // 检查是否有未完成任务
+        if(index.indexOf('-') == -1) {
+            // 主分类
+            var category = data.category[index];
+            hasUnfinished = hasUnfinishedTasks(category);
+            
+            // 检查子分类
+            if(!hasUnfinished && category.subCategory) {
+                for(var i = 0; i < category.subCategory.length; i++) {
+                    if(hasUnfinishedTasks(category.subCategory[i])) {
+                        hasUnfinished = true;
+                        break;
                     }
                 }
-                updateDataNumber(data);
-                updateTotalTaskNums();
-                updateCGList(data.category,selectIndex);
-                _.save(data);
-             })
-            .appendTo(document.body);
+            }
+        } else {
+            // 子分类
+            var arr = index.split('-');
+            var subCategory = data.category[arr[0]].subCategory[arr[1]];
+            hasUnfinished = hasUnfinishedTasks(subCategory);
+        }
+        
+        if(hasUnfinished) {
+            new Modal({text:'该分类下有未完成的任务，不能删除！',singleButton:true})
+                .on('confirm',function() {
+                    // Just close the modal, do nothing
+                })
+                .appendTo(document.body);
+        } else {
+            new Modal({text:'是否确认要删除？'})
+                .on('confirm',function() {
+                    if(index.indexOf('-') == -1) {
+                        data.category.splice(index,1);
+                        selectIndex = '' + Math.min(index,data.category.length - 1);
+                    }else {
+                        var arr = index.split('-');
+                        data.category[arr[0]].subCategory.splice(arr[1],1);
+                        if(data.category[arr[0]].subCategory.length == 0) {
+                            selectIndex = arr[0];
+                        }else {
+                            selectIndex = arr[0] + '-' + Math.min(arr[1],data.category[arr[0]].subCategory.length - 1);
+                        }
+                    }
+                    updateDataNumber(data);
+                    updateTotalTaskNums();
+                    updateCGList(data.category,selectIndex);
+                    _.save(data);
+                 })
+                .appendTo(document.body);
+        }
     });
     // 1-6.给新增分类的按钮注册点击事件
     $.click(addCG,function() {
@@ -353,26 +412,54 @@
     // 2-3.选中某个任务节点
     function toSelectTask(taskIndex) {
         var todos = taskList.querySelectorAll('.todo');
+        var selectedTodoElement = null;
         for(var i=0;i<todos.length;i++) {
             if(todos[i].index == taskIndex) {
                 _.addClass(todos[i],'z-crt');
                 selectTask = todos[i];
+                selectedTodoElement = todos[i];
             } else {
                 _.delClass(todos[i],'z-crt')
             }
         }
-        var arrTodos = [];
-        if(selectCG.index.indexOf('-') == -1) {
-            arrTodos = data.category[selectCG.index].todos;
-        }else {
-            var arr = selectCG.index.split('-');
-            arrTodos = data.category[arr[0]].subCategory[arr[1]].todos
+        
+        // Extract task data from DOM attributes
+        if(selectedTodoElement) {
+            var taskData = {
+                name: selectedTodoElement.getAttribute('data-name') || '',
+                date: selectedTodoElement.getAttribute('data-date') || '',
+                content: selectedTodoElement.getAttribute('data-content') || '',
+                isFinished: selectedTodoElement.getAttribute('data-isFinished') === 'true'
+            };
+            initDetail.setContent(taskData);
+        } else {
+            initDetail.reset();
         }
-        initDetail.setContent(arrTodos[taskIndex]);
     }
     // 2-4.任务列表节点上代理任务的点击事件
     $.delegate(taskList,'.todo','click',function() {
         toSelectTask(this.index);
+    });
+    // 2-4-1.任务列表节点上代理删除按钮的点击事件
+    $.delegate(taskList,'.delete','click',function() {
+        var todoNode = this.previousElementSibling;
+        var taskIndex = todoNode.index;
+        var todos = [];
+        if(selectCG.index.indexOf('-') == -1) {
+            todos = data.category[selectCG.index].todos;
+        } else {
+            var arr = selectCG.index.split('-');
+            todos = data.category[arr[0]].subCategory[arr[1]].todos;
+        }
+        new Modal({text:'是否确认要删除该任务？'})
+            .on('confirm',function() {
+                todos.splice(taskIndex, 1);
+                updateDataNumber(data);
+                updateTotalTaskNums();
+                updateCGList(data.category,selectCG.index);
+                _.save(data);
+            })
+            .appendTo(document.body);
     });
     // 2-5.给新增任务的按钮注册点击事件
     $.click(addTask,function() {
@@ -400,21 +487,24 @@
         var arr = [];
         if(selectTab.id == 'all') {
             for(var i = 0; i < todos.length; i++) {
-                todos[i].index = i;
-                arr.push(todos[i]);
+                var copy = Object.assign({}, todos[i]);
+                copy.index = i;
+                arr.push(copy);
             }
         } else if(selectTab.id == 'unfinished') {
             for(var i = 0; i < todos.length; i++) {
                 if(todos[i].isFinished === false) {
-                   todos[i].index = i;
-                   arr.push(todos[i]); 
+                   var copy = Object.assign({}, todos[i]);
+                   copy.index = i;
+                   arr.push(copy); 
                 }
             }
         } else {
             for(var i = 0; i < todos.length; i++) {
                 if(todos[i].isFinished === true) {
-                   todos[i].index = i;
-                   arr.push(todos[i]); 
+                   var copy = Object.assign({}, todos[i]);
+                   copy.index = i;
+                   arr.push(copy); 
                 }
             }
         }
@@ -431,12 +521,14 @@
         for(var i = 0;i < arr.length;i++) {
             var oldTask = ul.querySelector('#id'+arr[i].date);
             if(oldTask !== null) {
-                todo = new Todo(arr[i]).container;
-                todo.index = '' + arr[i].index;
-                oldTask.widget.taskWrap.appendChild(todo);
+                var todoObj = new Todo(arr[i]);
+                todoObj.todoNode.index = '' + arr[i].index;
+                oldTask.widget.taskWrap.appendChild(todoObj.container);
             }else {
                 task = new Task(arr[i]);
-                task.todo.index = '' + arr[i].index;
+                if(task.todo) {
+                    task.todo.index = '' + arr[i].index;
+                }
                 ul.appendChild(task.container);
             }
         }
@@ -465,18 +557,18 @@
         var subCG = null;
         for(var i = 0;i < arr.length;i++) {
             if(arr[i].name == '默认分类') {
-                cg = new Category({name:arr[i].name,number:arr[i].number,canDelete:false});
+                cg = new Category({name:arr[i].name,unfinishedNumber:arr[i].unfinishedNumber,totalNumber:arr[i].totalNumber,canDelete:false});
                 // 默认分类上添加id，用于查找
                 cg.category.id = 'defaultCG';
             } else {
-                cg = new Category({name:arr[i].name,number:arr[i].number});
+                cg = new Category({name:arr[i].name,unfinishedNumber:arr[i].unfinishedNumber,totalNumber:arr[i].totalNumber});
             }
             // 在category节点上添加index
             cg.category.index = '' + i;
             var arrSCG = arr[i].subCategory;
             if(arrSCG.length > 0){
                 for(var j = 0;j < arrSCG.length; j++) {
-                    subCG = new SubCategory({name:arrSCG[j].name,number:arrSCG[j].number});
+                    subCG = new SubCategory({name:arrSCG[j].name,unfinishedNumber:arrSCG[j].unfinishedNumber,totalNumber:arrSCG[j].totalNumber});
                     // 在sub-category节点上添加index
                     subCG.container.index = i+'-'+ j;
                     cg.cgWrap.appendChild(subCG.container);
@@ -506,6 +598,7 @@
 
     // 1-3.更新任务总数
     function updateTotalTaskNums() {
-        totalTaskNums.innerText = data.totalNumber;
+        totalTaskUnfinishedNum.innerText = data.totalUnfinishedNumber;
+        totalTaskTotalNum.innerText = data.totalNumber;
     }
 }(util);

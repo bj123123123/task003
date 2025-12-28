@@ -17,7 +17,7 @@
 
 
 
-    //@param {Object} {hasInput:true,text:'自定义内容'}
+    //@param {Object} {hasInput:true,text:'自定义内容',singleButton:false}
     function Modal(options){
       options = options || {};
       // 即 div.m-modal 节点
@@ -60,6 +60,11 @@
             this.input = this.container.querySelector('.modal_body input');
         }
         this.text && (this.bodyContent.innerText = this.text);
+        
+        // Hide cancel button for single button mode
+        if(this.singleButton === true) {
+            this.container.querySelector('.cancel').style.display = 'none';
+        }
       },
 
       // 初始化事件

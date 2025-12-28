@@ -2,14 +2,14 @@
     var template = 
     '<li>\
         <div class="cg category">\
-            <span class="icon"></span><span class="name">百度IFE项目</span><span class="number">(<i>0</i>)</span><span class="delete"></span>\
+            <span class="icon"></span><span class="name">百度IFE项目</span><span class="number">(<i>0</i>/<i>0</i>)</span><span class="delete"></span>\
         </div>\
         <div class="wrap">\
         </div>\
     </li>';
 
     var template2 = 
-    '<div class="cg sub-category"><span class="icon"></span><span class="name">task1</span><span class="number">(<i>0</i>)</span><span class="delete"></span></div>';
+    '<div class="cg sub-category"><span class="icon"></span><span class="name">task1</span><span class="number">(<i>0</i>/<i>0</i>)</span><span class="delete"></span></div>';
 
     //@param {Object} {name:'分类名称',number:10,canDelete:false}
     function Category(options) {
@@ -24,7 +24,8 @@
         // cgName节点，用于设置分类名字
         this.cgName = this.container.querySelector('.category .name');
         // cgNumber节点，用于设置分类未完成任务数
-        this.cgNumber = this.container.querySelector('.category .number i');
+        this.cgUnfinishedNumber = this.container.querySelector('.category .number i:first-child');
+        this.cgTotalNumber = this.container.querySelector('.category .number i:last-child');
         // cgDelete节点，用于设置是否可删除
         this.cgDelete = this.container.querySelector('.category .delete');
         // cgWrap节点，用于插入子类
@@ -41,7 +42,13 @@
         // 设置分类名字
         setContent: function(obj){
             this.cgName.innerText = obj.name;
-            this.cgNumber.innerText = obj.number;
+            if(obj.unfinishedNumber !== undefined && obj.totalNumber !== undefined) {
+                this.cgUnfinishedNumber.innerText = obj.unfinishedNumber;
+                this.cgTotalNumber.innerText = obj.totalNumber;
+            } else {
+                this.cgUnfinishedNumber.innerText = obj.number || 0;
+                this.cgTotalNumber.innerText = obj.number || 0;
+            }
         },
         // 添加子类
         addSubCG: function(obj){
@@ -50,13 +57,18 @@
 
         // 更新分类数量
         updateNumber: function() {
-            var subs = this.cgWrap.querySelectorAll('.sub-category .number i');
-            var num = 0;
+            var subs = this.cgWrap.querySelectorAll('.sub-category');
+            var unfinishedNum = 0;
+            var totalNum = 0;
             if(subs.length > 0) {
                 for(var i = 0; i < subs.length; i++) {
-                    num += Number(subs[i].innerText);
+                    var unfinished = Number(subs[i].querySelector('.number i:first-child').innerText);
+                    var total = Number(subs[i].querySelector('.number i:last-child').innerText);
+                    unfinishedNum += unfinished;
+                    totalNum += total;
                 }
-                this.cgNumber.innerText = num;
+                this.cgUnfinishedNumber.innerText = unfinishedNum;
+                this.cgTotalNumber.innerText = totalNum;
             }
         },
         // 删除分类
@@ -112,7 +124,8 @@
         // scgName节点，用于设置子类名字
         this.scgName = this.container.querySelector('.sub-category .name');
         // scgNumber节点，用于设置子类数量
-        this.scgNumber = this.container.querySelector('.sub-category .number i');
+        this.scgUnfinishedNumber = this.container.querySelector('.sub-category .number i:first-child');
+        this.scgTotalNumber = this.container.querySelector('.sub-category .number i:last-child');
         // scgDelete节点，用于绑定删除事件
         this.scgDelete = this.container.querySelector('.sub-category .delete');
 
@@ -128,7 +141,13 @@
         // 设置子类名字
         setContent: function(obj){
             this.scgName.innerText = obj.name;
-            this.scgNumber.innerText = obj.number;
+            if(obj.unfinishedNumber !== undefined && obj.totalNumber !== undefined) {
+                this.scgUnfinishedNumber.innerText = obj.unfinishedNumber;
+                this.scgTotalNumber.innerText = obj.totalNumber;
+            } else {
+                this.scgUnfinishedNumber.innerText = obj.number || 0;
+                this.scgTotalNumber.innerText = obj.number || 0;
+            }
         },
         // 添加兄弟子类
         addSubCG: function(name){

@@ -9,6 +9,9 @@
     var template2 = 
     '<div class="todo"></div>';
 
+    var deleteTemplate = 
+    '<span class="delete"></span>';
+
     //@param {Object} {date:'2015-04-28',name:'todo1',isFinished:true,content:'完成任务1'}
     function Task(options) {
         this.options = options || {};
@@ -35,7 +38,8 @@
         },
         // 添加任务
         addTodo: function(option){
-            this.todo = new Todo(option).container
+            var todo = new Todo(option);
+            this.todo = todo.container;
             this.taskWrap.appendChild(this.todo);
         },
 
@@ -51,10 +55,18 @@
     //@param {Object} {date:'2015-04-28',name:'todo1',isFinished:true,content:'完成任务1'}
     function Todo(options) {
         options = options || {};
+        // 创建包含todo和删除按钮的容器
+        this.container = document.createElement('div');
+        this.container.style.position = 'relative';
         // 即 todo节点
-        this.container = this._layout.cloneNode(true);
+        this.todoNode = this._layout.cloneNode(true);
+        // 删除按钮节点
+        this.deleteBtn = this._deleteLayout.cloneNode(true);
         // 在todo节点上定义一个widget属性指向this
-        this.container.widget = this;
+        this.todoNode.widget = this;
+        
+        this.container.appendChild(this.todoNode);
+        this.container.appendChild(this.deleteBtn);
 
         // 将options 复制到 组件实例上
         _.extend(this, options);
@@ -64,21 +76,22 @@
 
     _.extend(Todo.prototype,{
         _layout: _.html2node(template2),
+        _deleteLayout: _.html2node(deleteTemplate),
         // UI渲染初始化
         _renderUI: function() {
             if(this.date) {
-                this.container.setAttribute('data-date',this.date);
+                this.todoNode.setAttribute('data-date',this.date);
             }
             if(this.name) {
-                this.container.innerText = this.name;
-                this.container.setAttribute('data-name',this.name);
+                this.todoNode.innerText = this.name;
+                this.todoNode.setAttribute('data-name',this.name);
             }
             if(this.isFinished === true) {
-                _.addClass(this.container,'z-finished');
+                _.addClass(this.todoNode,'z-finished');
             }
-            this.container.setAttribute('data-isFinished',this.isFinished);
+            this.todoNode.setAttribute('data-isFinished',this.isFinished);
             if(this.content) {
-                this.container.setAttribute('data-content',this.content);
+                this.todoNode.setAttribute('data-content',this.content);
             }
         },
     });
