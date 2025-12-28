@@ -67,10 +67,12 @@
         // 隐藏finishBtn按钮
         hideBtn: function(){
             this.finishBtn.style.display = 'none';
+            this.editBtn.style.display = 'none';
         },
         // 隐藏finishBtn按钮
         showBtn: function(){
             this.finishBtn.style.display = 'inline-block';
+            this.editBtn.style.display = 'inline-block';
         },
         // 重置各项内容为空
         reset: function() {
