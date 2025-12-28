@@ -28,7 +28,7 @@ a:hover{color: #238c00;}
 
 
 /* 统一调用背景图 */
-.category .icon,.sub-category .icon,.addcategory .icon,.category .delete,.sub-category .delete,.addtask .icon,.title .finish,.title .edit{background: url(./imgs/sprite.png) no-repeat 9999px 9999px;}
+.category .icon,.sub-category .icon,.addcategory .icon,.category .delete,.sub-category .delete,.addtask .icon,.title .finish,.title .edit,.title .delete{background: url(./imgs/sprite.png) no-repeat 9999px 9999px;}
 
 
 
@@ -81,9 +81,10 @@ html,body,.g-wrap{min-width: 1000px;min-height: 480px;width: 100%;height: 100%;c
 .m-detail .title{position: relative;padding: 0 15px;border-bottom: 1px solid #ccc;height: 50px;line-height: 50px;background-color: #f2f2f2;}
 .title span{display: inline-block;}
 .title .name{font-size: 20px;font-weight: bold;}
-.title .finish,.title .edit{position: absolute;top: 14px;width: 30px;height: 30px;cursor: pointer;}
-.title .finish{right: 70px;background-position: 0 -120px;}
-.title .edit{right: 20px;background-position: 0 -150px;}
+.title .finish,.title .edit,.title .delete{position: absolute;top: 14px;width: 30px;height: 30px;cursor: pointer;}
+.title .finish{right: 120px;background-position: 0 -120px;}
+.title .edit{right: 70px;background-position: 0 -150px;}
+.title .delete{right: 20px;background-position: 10px -88px;}
 .m-detail .date{padding: 0 15px;border-bottom: 1px solid #ccc;height: 52px;line-height: 52px;background-color: #fafaee;font-size: 18px;}
 .m-detail .content{padding: 15px;font-size: 18px;line-height: 1.8;}
 
