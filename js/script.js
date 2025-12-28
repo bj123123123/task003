@@ -171,24 +171,36 @@
             }
             return num;
         }
+        function getTotalNums(array) {
+            return array.length;
+        }
         var arr = data.category;
         var totalNumber = 0;
+        var totalAllNumber = 0;
         for(var i = 0; i < arr.length; i++) {
             var arrSCG = arr[i].subCategory;
             if(arrSCG.length > 0) {
                 var number = 0;
+                var totalNumber = 0;
                 for(var j = 0;j < arrSCG.length; j++) {
                     arrSCG[j].number = getUnfinishedNums(arrSCG[j].todos);
+                    arrSCG[j].totalNumber = getTotalNums(arrSCG[j].todos);
                     number += arrSCG[j].number;
+                    totalNumber += arrSCG[j].totalNumber;
                 }
                 arr[i].number = number + getUnfinishedNums(arr[i].todos);
+                arr[i].totalNumber = totalNumber + getTotalNums(arr[i].todos);
                 totalNumber += arr[i].number;
+                totalAllNumber += arr[i].totalNumber;
             } else {
                 arr[i].number = getUnfinishedNums(arr[i].todos);
+                arr[i].totalNumber = getTotalNums(arr[i].todos);
                 totalNumber += arr[i].number;
+                totalAllNumber += arr[i].totalNumber;
             }
         }
         data.totalNumber =  totalNumber;
+        data.totalAllNumber = totalAllNumber;
     }
     // 获取任务总数节点
     var totalTaskNums = $('#total i');
@@ -233,7 +245,7 @@
         toSelectTab(this);
         updateCGList(data.category,selectCG.index);
     })
-    //初始化任务详情
+    // 初始化任务详情
     var initDetail = new Detail()
                         .on('finish',function() {
                             if(selectTab.id == 'all') {
@@ -270,6 +282,19 @@
                                 updateTaskList(todos,index);
                                 _.save(data);
                             }).container);
+                        }).on('delete',function() {
+                            var todos = [];
+                            if(selectCG.index.indexOf('-') == -1) {
+                                todos = data.category[selectCG.index].todos;
+                            } else {
+                                var arr = selectCG.index.split('-');
+                                todos = data.category[arr[0]].subCategory[arr[1]].todos;
+                            }
+                            todos.splice(selectTask.index,1);
+                            updateDataNumber(data);
+                            updateTotalTaskNums();
+                            updateCGList(data.category,selectCG.index);
+                            _.save(data);
                         });
     gBody.appendChild(initDetail.container);
     // 初始化任务总数
@@ -305,26 +330,43 @@
     $.delegate(cgList,'.delete','click',function() {
         var index = this.parentNode.index;
         var selectIndex = '';
-        new Modal({text:'是否确认要删除？'})
-            .on('confirm',function() {
-                if(index.indexOf('-') == -1) {
-                    data.category.splice(index,1);
-                    selectIndex = '' + Math.min(index,data.category.length - 1);
-                }else {
-                    var arr = index.split('-');
-                    data.category[arr[0]].subCategory.splice(arr[1],1);
-                    if(data.category[arr[0]].subCategory.length == 0) {
-                        selectIndex = arr[0];
+        var hasUnfinished = false;
+        // 检查是否有未完成任务
+        if(index.indexOf('-') == -1) {
+            // 分类
+            hasUnfinished = data.category[index].number > 0;
+        }else {
+            // 子类
+            var arr = index.split('-');
+            hasUnfinished = data.category[arr[0]].subCategory[arr[1]].number > 0;
+        }
+        if(hasUnfinished) {
+            var modal = new Modal({text:'该分类下有未完成任务，不能删除！'});
+            var confirmBtn = modal.container.querySelector('.confirm');
+            confirmBtn.parentNode.removeChild(confirmBtn);
+            modal.appendTo(document.body);
+        } else {
+            new Modal({text:'是否确认要删除？'})
+                .on('confirm',function() {
+                    if(index.indexOf('-') == -1) {
+                        data.category.splice(index,1);
+                        selectIndex = '' + Math.min(index,data.category.length - 1);
                     }else {
-                        selectIndex = arr[0] + '-' + Math.min(arr[1],data.category[arr[0]].subCategory.length - 1);
+                        var arr = index.split('-');
+                        data.category[arr[0]].subCategory.splice(arr[1],1);
+                        if(data.category[arr[0]].subCategory.length == 0) {
+                            selectIndex = arr[0];
+                        }else {
+                            selectIndex = arr[0] + '-' + Math.min(arr[1],data.category[arr[0]].subCategory.length - 1);
+                        }
                     }
-                }
-                updateDataNumber(data);
-                updateTotalTaskNums();
-                updateCGList(data.category,selectIndex);
-                _.save(data);
-             })
-            .appendTo(document.body);
+                    updateDataNumber(data);
+                    updateTotalTaskNums();
+                    updateCGList(data.category,selectIndex);
+                    _.save(data);
+                 })
+                .appendTo(document.body);
+        }
     });
     // 1-6.给新增分类的按钮注册点击事件
     $.click(addCG,function() {
@@ -506,6 +548,6 @@
 
     // 1-3.更新任务总数
     function updateTotalTaskNums() {
-        totalTaskNums.innerText = data.totalNumber;
+        totalTaskNums.innerText = data.totalNumber + '/' + data.totalAllNumber;
     }
 }(util);

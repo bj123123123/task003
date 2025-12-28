@@ -41,7 +41,7 @@
         // 设置分类名字
         setContent: function(obj){
             this.cgName.innerText = obj.name;
-            this.cgNumber.innerText = obj.number;
+            this.cgNumber.innerText = obj.number + '/' + (obj.totalNumber || obj.number);
         },
         // 添加子类
         addSubCG: function(obj){
@@ -128,7 +128,7 @@
         // 设置子类名字
         setContent: function(obj){
             this.scgName.innerText = obj.name;
-            this.scgNumber.innerText = obj.number;
+            this.scgNumber.innerText = obj.number + '/' + (obj.totalNumber || obj.number);
         },
         // 添加兄弟子类
         addSubCG: function(name){

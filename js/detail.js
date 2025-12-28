@@ -2,7 +2,7 @@
     var template = 
     '<div class="m-detail">\
         <div class="title">\
-            <span class="name"></span><span class="finish" style="display:none;"></span><span class="edit" style="display:none"></span>\
+            <span class="name"></span><span class="finish" style="display:none;"></span><span class="edit" style="display:none"></span><span class="delete" style="display:none"></span>\
         </div>\
         <div class="date">\
             <p></p>\
@@ -39,6 +39,8 @@
         this.finishBtn = this.container.querySelector('.title .finish');
         // editBtn节点，用于设置是否有完成按钮
         this.editBtn = this.container.querySelector('.title .edit');
+        // deleteBtn节点，用于删除任务
+        this.deleteBtn = this.container.querySelector('.title .delete');
         // taskDate节点，用于设置分类名字
         this.taskDate = this.container.querySelector('.date p');
         // taskContent节点，用于设置是否可删除
@@ -63,6 +65,7 @@
                 this.hideBtn();
             }
             this.editBtn.style.display = obj.date === '' ? 'none' : 'inline-block';
+            this.deleteBtn.style.display = obj.date === '' ? 'none' : 'inline-block';
         },
         // 隐藏finishBtn按钮
         hideBtn: function(){
@@ -71,6 +74,10 @@
         // 隐藏finishBtn按钮
         showBtn: function(){
             this.finishBtn.style.display = 'inline-block';
+        },
+        // 显示deleteBtn按钮
+        showDeleteBtn: function(){
+            this.deleteBtn.style.display = 'inline-block';
         },
         // 重置各项内容为空
         reset: function() {
@@ -103,6 +110,13 @@
                 that._onEdit();
                 // that.container.parentNode.appendChild(new Editor(that.getData()).container);
             });
+            _.addEvent(this.deleteBtn,'click',function(event) {
+                new Modal({text:'是否确认删除该项任务？'})
+                    .on('confirm',function() {
+                         that._onDelete();
+                    })
+                    .appendTo(document.body);
+            });
         },
         _onFinish: function(){
           this.emit('finish');
@@ -110,6 +124,9 @@
         },
         _onEdit: function(){
             this.emit('edit');
+        },
+        _onDelete: function(){
+            this.emit('delete');
         }
     });
 
